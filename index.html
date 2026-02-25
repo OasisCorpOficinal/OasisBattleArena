@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OASIS - System V27</title>
+    <title>OASIS - System V28</title>
     
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
     <style>
         /* =========================================
-           DESIGN SYSTEM: NEON TACTICAL V27
+           DESIGN SYSTEM: NEON TACTICAL V28
            ========================================= */
         :root {
             --bg: #00050a; 
@@ -109,7 +109,7 @@
     <div id="tela-login" class="screen active">
         <div class="center-frame">
             <h1 style="color: var(--cyan); font-size: 3rem; text-shadow: 0 0 15px var(--cyan);">OASIS</h1>
-            <p style="color: var(--yellow); font-size: 0.8rem; margin-bottom: 30px;">CLOUD SYSTEM V 27.0</p>
+            <p style="color: var(--yellow); font-size: 0.8rem; margin-bottom: 30px;">CLOUD SYSTEM V 28.0</p>
             <select id="login-user" onchange="mostrarSenha()">
                 <option value="" disabled selected>CARREGANDO NUVEM...</option>
             </select>
@@ -123,7 +123,7 @@
 
     <div id="boot-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:999; flex-direction:column; align-items:center; justify-content:center;" onclick="finalizarBoot()">
         <h1 style="color:var(--cyan); font-size:4rem; animation: pulse 1s infinite;">OASIS</h1>
-        <p style="color:#666; font-size:0.7rem; margin-top:10px;">BAIXANDO DADOS DO SERVIDOR...</p>
+        <p style="color:#666; font-size:0.7rem; margin-top:10px;">SINCRONIZANDO COM O SERVIDOR...</p>
         <p style="color:#444; font-size:0.6rem; margin-top:50px;">[ TOQUE PARA PULAR ]</p>
     </div>
     <style>@keyframes pulse { 0%{opacity:0.5} 100%{opacity:1} }</style>
@@ -159,7 +159,7 @@
         </div>
         <div style="flex:1; overflow-y:auto; padding-bottom: 50px;">
             <div style="padding:10px;">
-                <button class="btn-action" style="background:var(--orange-dim); color:var(--orange); border-color:var(--orange);" onclick="abrirCombate()">⚔️ ARENA DE COMBATE (V27)</button>
+                <button class="btn-action" style="background:var(--orange-dim); color:var(--orange); border-color:var(--orange);" onclick="abrirCombate()">⚔️ ARENA DE COMBATE (V28)</button>
                 <button class="btn-action btn-bestiary" onclick="abrirBestiario()">📖 BESTIÁRIO</button>
             </div>
             <div class="master-global-section">
@@ -253,6 +253,7 @@
     </div>
 
     <script>
+        // CONFIGURAÇÃO DO SEU FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyBj4u8_X5kyBCcxjxtX-6KpNkOyTp5_iO4",
             authDomain: "oasis-battle-arena.firebaseapp.com",
@@ -262,7 +263,8 @@
             appId: "1:609109807560:web:58e3ae8622c3c7d980b0fd"
         };
 
-        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        // INICIALIZAÇÃO FIREBASE (COMPAT)
+        firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
         let dadosGlobais = { avisos: "SISTEMA ONLINE", ranking: "1. -", loja: "" };
