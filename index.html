@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OASIS - Cloud System</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <style>
+        /* =========================================
+           DESIGN SYSTEM: NEON TACTICAL V26 (FINAL)
+           ========================================= */
+        :root {
+            --bg: #00050a; 
+            --panel: rgba(5, 15, 25, 0.95);
+            --cyan: #00f3ff; --cyan-dim: rgba(0, 243, 255, 0.1);
+            --yellow: #ffd700; --yellow-dim: rgba(255, 215, 0, 0.1);
+            --danger: #ff2a2a; --danger-dim: rgba(255, 42, 42, 0.1);
+            --green: #00ff00; --orange: #ff5e00; --magenta: #ff00ff;
+            --text: #e0faff;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', 'Courier New', monospace; }
+        
+        body { 
+            background-color: var(--bg); color: var(--text); 
+            width: 100vw; height: 100vh; overflow: hidden;
+            background-image: 
+                linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px), 
+                linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+        }
+
+        .screen { display: none; width: 100%; height: 100%; flex-direction: column; position: relative; }
+        .screen.active { display: flex; animation: fadeEntry 0.5s ease-out; }
+        @keyframes fadeEntry { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+
+        /* UI ELEMENTS */
+        .neon-card { border: 1px solid var(--cyan); background: var(--cyan-dim); padding: 15px; border-radius: 6px; margin-bottom: 15px; box-shadow: 0 0 15px rgba(0, 243, 255, 0.05); position: relative; }
+        h2 { font-size: 1.5rem; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 2px; color: #fff; text-shadow: 0 0 5px var(--cyan); }
+        h3 { font-size: 1rem; color: #888; margin-bottom: 15px; text-transform: uppercase; border-bottom: 1px solid #333; padding-bottom: 5px; }
+        h4 { color: var(--yellow); font-size: 0.8rem; letter-spacing: 1px; margin-bottom: 10px; text-transform: uppercase; }
+        
+        select, input, textarea { background: rgba(0,0,0,0.6); border: 1px solid #444; color: var(--cyan); padding: 8px; width: 100%; text-align: center; font-size: 0.9rem; margin-bottom: 5px; border-radius: 4px; outline: none; font-family: monospace; }
+        input:focus, textarea:focus { border-color: var(--cyan); box-shadow: 0 0 10px var(--cyan-dim); }
+
+        .btn-action { background: transparent; border: 1px solid var(--cyan); color: var(--cyan); padding: 12px; width: 100%; font-weight: bold; text-transform: uppercase; cursor: pointer; transition: 0.3s; letter-spacing: 1px; margin-top: 5px; }
+        .btn-action:active { background: var(--cyan); color: #000; box-shadow: 0 0 20px var(--cyan); }
+        .btn-link { background: rgba(255, 0, 255, 0.1); border: 1px solid var(--magenta); color: var(--magenta); margin-bottom: 20px; }
+        .btn-store { background: rgba(0, 255, 0, 0.1); border: 1px solid var(--green); color: var(--green); margin-bottom: 15px; }
+        .btn-bestiary { background: rgba(255, 0, 255, 0.1); border: 1px solid var(--magenta); color: var(--magenta); font-size: 0.8rem; padding: 10px; margin-bottom: 10px; }
+
+        .bar-container { background: #111; height: 20px; width: 100%; border-radius: 4px; border: 1px solid #333; overflow: hidden; margin-top: 5px; }
+        .bar-fill { height: 100%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: #000; font-weight: 800; transition: width 0.5s ease; }
+        .fill-cyan { background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
+        .fill-yellow { background: var(--yellow); box-shadow: 0 0 10px var(--yellow); }
+        .big-number { font-size: 2.5rem; font-weight: 900; margin: 5px 0; text-shadow: 0 0 15px currentColor; }
+
+        .center-frame { margin: auto; width: 90%; max-width: 400px; padding: 40px 20px; border: 2px solid var(--magenta); background: rgba(10, 5, 10, 0.9); text-align: center; border-radius: 10px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        .dual-panel-container { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 10px; }
+        .panel-box { border: 1px solid #333; background: rgba(0,0,0,0.6); padding: 15px; border-radius: 6px; }
+        .text-content { font-family: monospace; font-size: 0.8rem; line-height: 1.4; white-space: pre-wrap; color: #ccc; text-align: left; }
+        .master-global-section { background: #1a1a1a; padding: 15px; border-bottom: 4px solid var(--yellow); margin-bottom: 20px; }
+        .player-row { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 10px; margin-bottom: 5px; border-radius: 4px; border: 1px solid #333; }
+        .btn-mini { padding: 5px 10px; font-size: 0.7rem; border: 1px solid #555; background: #222; color: #fff; cursor: pointer; margin-left: 5px; }
+        .btn-mini.del { border-color: var(--danger); color: var(--danger); }
+
+        /* COMBATE */
+        .combat-tabs { display: flex; border-bottom: 2px solid #333; margin-bottom: 15px; }
+        .tab-btn { flex: 1; padding: 10px; background: #111; color: #666; border: none; font-weight: bold; cursor: pointer; }
+        .tab-btn.active { background: var(--orange-dim); color: var(--orange); border-bottom: 2px solid var(--orange); }
+        .combat-content { display: none; }
+        .combat-content.active { display: block; animation: fadeEntry 0.3s; }
+        .combat-card { border: 2px solid var(--orange); background: rgba(255, 94, 0, 0.05); padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        .combat-input { border-color: var(--orange); color: var(--orange); background: #110; }
+        .hp-control { display: flex; gap: 10px; align-items: center; justify-content: center; margin: 15px 0; }
+        .btn-hp { width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--orange); background: #220; color: var(--orange); font-size: 1.5rem; cursor: pointer; font-weight: bold; }
+        .current-hp { font-size: 3rem; font-weight: 900; color: var(--orange); text-shadow: 0 0 20px var(--orange); width: 100px; text-align: center; }
+        
+        .horde-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; max-height: 450px; overflow-y: auto; padding: 5px; border: 1px solid #333; background: #000; }
+        .minion-chip { background: #1a1a1a; border: 1px solid #444; border-radius: 4px; padding: 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: 0.1s; user-select: none; position: relative; }
+        .hp-high { color: #00ff00; border-color: #00ff00; } .hp-mid { color: #ffff00; border-color: #ffff00; } .hp-low { color: #ff0000; border-color: #ff0000; } .dead { opacity: 0.3; border-color: #333; background: #000; }
+        .minion-name { font-size: 0.6rem; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+        .minion-hp { font-size: 1rem; font-weight: bold; }
+        
+        /* TOOLTIP GLOBAL */
+        #global-tooltip { position: fixed; display: none; z-index: 999999; background: rgba(0,0,0,0.95); border: 1px solid var(--cyan); padding: 15px; border-radius: 8px; width: 280px; box-shadow: 0 0 30px rgba(0,0,0,0.8); pointer-events: none; font-size: 0.8rem; color: #fff; text-align: left; }
+        .tt-title { color: var(--cyan); font-weight: bold; border-bottom: 1px solid var(--cyan); margin-bottom: 5px; padding-bottom: 2px; }
+        .tt-row { display: flex; justify-content: space-between; margin-bottom: 2px; }
+        .tt-label { color: #aaa; } .tt-val { color: #fff; font-weight: bold; }
+        .tt-skill { margin-top: 8px; font-size: 0.75rem; border-left: 2px solid var(--magenta); padding-left: 5px; }
+        .tt-weak { margin-top: 8px; color: var(--danger); font-weight: bold; border: 1px solid var(--danger); padding: 2px 5px; display: inline-block; }
+        .tt-loot { margin-top: 8px; color: var(--green); border-top: 1px dashed #444; padding-top: 5px; font-weight: bold; }
+
+        .roleta-box { background: #111; border: 1px solid var(--green); padding: 10px; border-radius: 6px; text-align: center; margin-top: 10px; }
+        #resultado-roleta { font-size: 1.2rem; font-weight: bold; color: var(--green); text-shadow: 0 0 10px var(--green); min-height: 1.5rem; margin-top: 5px; }
+        
+        /* STATUS */
+        #status-cloud { position: fixed; bottom: 10px; right: 10px; font-size: 0.7rem; color: #666; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+    <div id="global-tooltip"></div>
+    <div id="status-cloud">🔴 CONECTANDO...</div>
+
+    <div id="tela-login" class="screen active">
+        <div class="center-frame">
+            <h1 style="color: var(--cyan); font-size: 3rem; text-shadow: 0 0 15px var(--cyan);">OASIS</h1>
+            <p style="color: var(--yellow); font-size: 0.8rem; margin-bottom: 30px;">CLOUD SERVER ONLINE</p>
+            <select id="login-user" onchange="mostrarSenha()">
+                <option value="" disabled selected>CARREGANDO NUVEM...</option>
+            </select>
+            <div id="area-senha" style="display:none; margin-top:10px;">
+                <input type="password" id="login-pass" placeholder="SENHA">
+                <button class="btn-action" onclick="validarLogin()">CONECTAR</button>
+            </div>
+            <div id="msg-erro" style="color: var(--danger); margin-top: 15px;"></div>
+        </div>
+    </div>
+
+    <div id="boot-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:999; flex-direction:column; align-items:center; justify-content:center;" onclick="finalizarBoot()">
+        <h1 style="color:var(--cyan); font-size:4rem; animation: pulse 1s infinite;">OASIS</h1>
+        <p style="color:#666; font-size:0.7rem; margin-top:10px;">SINCRONIZANDO COM O SERVIDOR...</p>
+        <p style="color:#444; font-size:0.6rem; margin-top:50px;">[ TOQUE PARA PULAR ]</p>
+    </div>
+    <style>@keyframes pulse { 0%{opacity:0.5} 100%{opacity:1} }</style>
+
+    <div id="tela-jogador" class="screen">
+        <div style="display:flex; justify-content:space-between; padding:15px; border-bottom:1px solid var(--cyan); background:rgba(0,20,30,0.9);">
+            <div><span style="font-size:0.6rem; color:#aaa;">AGENTE</span><br><strong style="color:var(--cyan);" id="hud-nome">NOME</strong></div>
+            <div style="text-align:right;"><span style="font-size:0.6rem; color:#aaa;">CONEXÃO</span><br><strong style="color:#0f0;">ONLINE ●</strong></div>
+        </div>
+        <div style="flex:1; overflow-y:auto; padding: 15px;">
+            <div id="container-link" style="display:none;"><button class="btn-action btn-link" onclick="abrirPlanilha()">📂 ACESSAR FICHA</button></div>
+            <div class="neon-card">
+                <h2 id="hud-tipo-missao">...</h2>
+                <div style="margin-top: 10px; color: var(--yellow);">NÍVEL: <span id="hud-nivel">1</span></div>
+            </div>
+            <div id="panel-normal" style="display:none;" class="neon-card"><div style="display:flex; justify-content:space-between;"><span>BATALHAS</span><span id="txt-batalhas">0/10</span></div><div class="bar-container"><div id="bar-batalhas" class="bar-fill fill-cyan" style="width:0%;">0%</div></div></div>
+            <div id="panel-especial" style="display:none;" class="neon-card" style="border-color:var(--yellow);"><div style="display:flex; justify-content:space-between;"><span>CHAVES</span><span id="txt-chaves">0/20</span></div><div class="bar-container"><div id="bar-chaves" class="bar-fill fill-yellow" style="width:0%;">0</div></div></div>
+            <div id="panel-royal" style="display:none;" class="neon-card" style="border-color:var(--danger);"><h4 style="color:var(--danger)">KILLS</h4><div id="txt-kills" class="big-number">0</div></div>
+            <div id="panel-pvp" style="display:none;" class="neon-card"><div><h4 style="color:var(--cyan)">VITÓRIAS</h4><div id="txt-wins" class="big-number">0</div></div></div>
+            <div id="container-loja" style="display:none; margin-top:20px;"><button class="btn-action btn-store" onclick="abrirLoja()">🛒 ACESSAR LOJA</button></div>
+            <div class="dual-panel-container">
+                <div class="panel-box"><h4 style="color:var(--danger)">AVISOS</h4><pre id="hud-avisos" class="text-content"></pre></div>
+                <div class="panel-box"><h4 style="color:var(--yellow)">RANKING</h4><pre id="hud-ranking" class="text-content"></pre></div>
+            </div>
+            <button onclick="location.reload()" style="margin-top:30px; width:100%; padding:15px; background:none; border:1px solid #333; color:#555;">DESCONECTAR</button>
+        </div>
+    </div>
+
+    <div id="tela-mestre" class="screen" style="background:#151515;">
+        <div style="padding:15px; background:#222; border-bottom:3px solid var(--yellow); display:flex; justify-content:space-between;">
+            <span style="color:var(--yellow); font-weight:bold;">COMANDO CENTRAL</span>
+            <button onclick="location.reload()" style="background:#c0392b; color:#fff; border:none; padding:5px 10px;">SAIR</button>
+        </div>
+        <div style="flex:1; overflow-y:auto; padding-bottom: 50px;">
+            <div style="padding:10px;">
+                <button class="btn-action" style="background:var(--orange-dim); color:var(--orange); border-color:var(--orange);" onclick="abrirCombate()">⚔️ ARENA DE COMBATE (V26)</button>
+                <button class="btn-action btn-bestiary" onclick="abrirBestiario()">📖 BESTIÁRIO</button>
+            </div>
+            <div class="master-global-section">
+                <h3>📢 GESTÃO GLOBAL</h3>
+                <label style="color:var(--green); font-size:0.7rem;">LINK LOJA</label><input type="text" id="global-loja">
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
+                    <div><label>AVISOS</label><textarea id="global-avisos" rows="4"></textarea></div>
+                    <div><label>RANKING</label><textarea id="global-ranking" rows="4"></textarea></div>
+                </div>
+                <button class="btn-action" style="background:var(--yellow); color:#000;" onclick="salvarGlobal()">ENVIAR PARA TODOS</button>
+            </div>
+            <div style="padding: 20px;">
+                <h3>👤 AGENTES</h3>
+                <div id="mestre-selecao">
+                    <button class="btn-action" style="background:var(--green); color:#000; margin-bottom:20px;" onclick="abrirCriador()">+ NOVO AGENTE</button>
+                    <div id="lista-mestre"></div>
+                </div>
+                <div id="editor-mestre" style="display:none; background:#252525; padding:20px; border-left:4px solid var(--cyan);">
+                    <h2 id="titulo-editor">NOME</h2>
+                    <input type="text" id="edit-link" placeholder="LINK FICHA">
+                    <input type="text" id="edit-senha" placeholder="SENHA">
+                    <select id="edit-tipo" onchange="atualizarInputsMestre()">
+                        <option value="MISSÃO NORMAL">MISSÃO NORMAL</option><option value="MISSÃO ESPECIAL">MISSÃO ESPECIAL</option>
+                        <option value="ARENA ROYAL">ARENA BATTLE ROYAL</option><option value="COMBATE 1X1">COMBATE 1X1</option>
+                    </select>
+                    <label>NÍVEL</label><input type="number" id="edit-nivel">
+                    <div id="input-bat" style="display:none;"><input type="number" id="val-bat" placeholder="BATALHAS"></div>
+                    <div id="input-key" style="display:none;"><input type="number" id="val-key" placeholder="CHAVES"></div>
+                    <div id="input-kill" style="display:none;"><input type="number" id="val-kill" placeholder="KILLS"></div>
+                    <div id="input-pvp" style="display:none;"><div style="display:flex; gap:10px;"><input type="number" id="val-wins" placeholder="W"><input type="number" id="val-losses" placeholder="L"></div></div>
+                    <button class="btn-action" onclick="salvarJogador()">SALVAR NA NUVEM</button>
+                    <button onclick="fecharEditor()" style="width:100%; background:none; border:none; color:#666; margin-top:10px;">CANCELAR</button>
+                </div>
+                <div id="criador-mestre" style="display:none; background:#252525; padding:20px; border-left:4px solid var(--green);">
+                    <h2>RECRUTAMENTO</h2>
+                    <input type="text" id="novo-nome" placeholder="NOME"><input type="text" id="nova-senha" placeholder="SENHA">
+                    <button class="btn-action" style="background:var(--green); color:#000;" onclick="confirmarCriacao()">CRIAR</button>
+                    <button onclick="fecharCriador()" style="width:100%; background:none; border:none; color:#666; margin-top:10px;">CANCELAR</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tela-combate" class="screen" style="background: #0a0500;">
+        <div style="padding:15px; background:#1a0a00; border-bottom:3px solid var(--orange); display:flex; justify-content:space-between;">
+            <span style="color:var(--orange);">ARENA</span>
+            <button onclick="fecharCombate()" style="border:1px solid #444; color:#666; padding:5px 10px;">VOLTAR</button>
+        </div>
+        <div style="text-align: center; background: #111; padding: 5px;">
+            <button class="btn-action btn-bestiary" style="width: auto; margin:0;" onclick="abrirBestiario()">📖 VER BESTIÁRIO</button>
+        </div>
+        <div class="combat-tabs">
+            <button class="tab-btn active" onclick="mudarTabCombate('tab-boss', this)">BOSS</button>
+            <button class="tab-btn" onclick="mudarTabCombate('tab-horda', this)">HORDA</button>
+        </div>
+        <div style="flex:1; overflow-y:auto; padding: 20px;">
+            
+            <div id="tab-boss" class="combat-content active">
+                <div class="combat-card">
+                    <div style="display:flex; gap:5px;"><input type="text" id="mob-nome" class="combat-input" placeholder="NOME"><input type="text" class="combat-input" placeholder="ORIGEM"></div>
+                    <div style="display:flex; gap:5px;"><input type="text" class="combat-input" placeholder="ATK"><input type="text" class="combat-input" placeholder="DEF"><input type="text" class="combat-input" placeholder="VEL"></div>
+                    <div style="text-align:center; margin-top:10px;">
+                        <div class="hp-control">
+                            <button class="btn-hp" onclick="mudarHP(-5)">-5</button><span id="mob-hp-atual" class="current-hp">20</span><button class="btn-hp" onclick="mudarHP(5)">+5</button>
+                        </div>
+                        <input type="number" id="mob-hp-max" value="20" class="combat-input" style="width:100px;" onchange="setHpMax()">
+                    </div>
+                    <label style="color:var(--magenta);">SKILLS</label>
+                    <input type="text" class="combat-input" placeholder="S1"><input type="text" class="combat-input" placeholder="S2"><input type="text" class="combat-input" placeholder="S3 (ULT)">
+                    <label style="color:var(--danger);">PONTO FRACO</label><input type="text" class="combat-input">
+                    <label style="color:var(--green);">LOOT</label><input type="text" id="mob-loot" class="combat-input" style="border-color:var(--green); color:var(--green);">
+                </div>
+            </div>
+
+            <div id="tab-horda" class="combat-content">
+                <div class="combat-card" style="background:#111;">
+                    <div style="display:flex; gap:5px;"><input type="text" id="h-nome" placeholder="NOME" class="combat-input" style="flex:2"><input type="text" id="h-origem" placeholder="ORIGEM" class="combat-input" style="flex:1"><input type="number" id="h-qtd" placeholder="QTD" class="combat-input" style="flex:0.5"></div>
+                    <div style="display:flex; gap:5px;"><input type="number" id="h-hp" placeholder="HP" class="combat-input" style="border-color:#0f0;"><input type="number" id="h-atk" placeholder="ATK" class="combat-input"><input type="number" id="h-def" placeholder="DEF" class="combat-input"><input type="number" id="h-vel" placeholder="VEL" class="combat-input"></div>
+                    <input type="text" id="h-weak" placeholder="PONTO FRACO" class="combat-input" style="border-color:#f00; color:#f00;">
+                    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:5px;"><input type="text" id="h-s1" placeholder="S1" class="combat-input"><input type="text" id="h-s2" placeholder="S2" class="combat-input"><input type="text" id="h-s3" placeholder="S3" class="combat-input"></div>
+                    <input type="text" id="h-loot" placeholder="LOOT" class="combat-input" style="border-color:var(--green); color:var(--green); margin-top:5px;">
+                    <button class="btn-action" onclick="spawnHorde()">ADICIONAR À MESA</button>
+                    <div style="display:flex; gap:10px; margin-top:10px;"><button class="btn-hp" style="width:40px;height:40px;font-size:1rem;" onclick="danoEmMassa(1)">-1</button><button class="btn-hp" style="width:40px;height:40px;font-size:1rem;" onclick="danoEmMassa(5)">-5</button><button onclick="limparHorda()" style="background:red; color:white; border:none; margin-left:auto;">LIMPAR</button></div>
+                </div>
+                <div id="horde-container" class="horde-grid"></div>
+            </div>
+
+            <div class="roleta-box">
+                <h4 style="color:var(--green);">QUEM FINALIZOU?</h4>
+                <button class="btn-action" style="border-color:var(--green); color:var(--green);" onclick="sortearVencedor()">SORTEAR</button>
+                <div id="resultado-roleta">...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // CONFIGURAÇÃO DO SEU FIREBASE
+        const firebaseConfig = {
+            apiKey: "AIzaSyBj4u8_X5kyBCcxjxtX-6KpNk0yTp5_iO4",
+            authDomain: "oasis-battle-arena.firebaseapp.com",
+            projectId: "oasis-battle-arena",
+            storageBucket: "oasis-battle-arena.firebasestorage.app",
+            messagingSenderId: "609109807560",
+            appId: "1:609109807560:web:58e3ae8622c3c7d980b0fd"
+        };
+
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        const db = firebase.database();
+
+        let dadosGlobais = { avisos: "SISTEMA ONLINE", ranking: "1. -", loja: "" };
+        let jogadores = {};
+        let usuarioAtual = "", editando = "";
+        let mobHP = 20, horda = [];
+
+        // 1. CARREGAR (OUVIR NUVEM)
+        db.ref('oasis').on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                if(data.jogadores) jogadores = data.jogadores;
+                if(data.global) dadosGlobais = data.global;
+                
+                if (usuarioAtual && jogadores[usuarioAtual]) atualizarHudJogador();
+                else if (document.getElementById('tela-login').classList.contains('active')) atualizarListaLogin();
+                if (document.getElementById('tela-mestre').classList.contains('active')) renderListaMestre();
+
+                document.getElementById('status-cloud').innerText = "🟢 ONLINE";
+                document.getElementById('status-cloud').style.color = "#0f0";
+            }
+        }, (error) => {
+            console.error(error);
+            document.getElementById('status-cloud').innerText = "🔴 ERRO CONEXÃO";
+        });
+
+        // 2. SALVAR
+        function salvarNuvem() { db.ref('oasis').set({ jogadores: jogadores, global: dadosGlobais }); }
+
+        // --- LOGIN ---
+        function atualizarListaLogin() {
+            const sel = document.getElementById('login-user');
+            sel.innerHTML = '<option value="" disabled selected>IDENTIFIQUE-SE</option><option value="Mestre">SISTEMA MESTRE</option>';
+            for(let n in jogadores) sel.innerHTML += `<option value="${n}">${n.toUpperCase()}</option>`;
+        }
+        function mostrarSenha() { document.getElementById('area-senha').style.display = 'block'; }
+        function validarLogin() {
+            const u = document.getElementById('login-user').value; const p = document.getElementById('login-pass').value;
+            if (u === "Mestre" && p === "31051994") irPara('tela-mestre'), carregarMestreGeral();
+            else if (jogadores[u] && p === jogadores[u].senha) usuarioAtual = u, iniciarBoot();
+            else document.getElementById('msg-erro').innerText = "SENHA INCORRETA";
+        }
+        function irPara(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+
+        // --- JOGADOR ---
+        function iniciarBoot() { document.getElementById('tela-login').classList.remove('active'); document.getElementById('boot-overlay').style.display='flex'; setTimeout(() => { document.getElementById('boot-overlay').style.display='none'; irPara('tela-jogador'); atualizarHud(); }, 2000); }
+        function atualizarHud() {
+            const d = jogadores[usuarioAtual];
+            document.getElementById('hud-nome').innerText = usuarioAtual;
+            document.getElementById('hud-tipo-missao').innerText = d.tipo;
+            document.getElementById('hud-nivel').innerText = d.nivel;
+            document.getElementById('hud-avisos').innerText = dadosGlobais.avisos;
+            document.getElementById('hud-ranking').innerText = dadosGlobais.ranking;
+            document.getElementById('container-link').style.display = d.link ? 'block' : 'none';
+            document.getElementById('container-loja').style.display = dadosGlobais.loja ? 'block' : 'none';
+            ['panel-normal', 'panel-especial', 'panel-royal', 'panel-pvp'].forEach(id => document.getElementById(id).style.display = 'none');
+            if(d.tipo.includes("NORMAL")) document.getElementById('panel-normal').style.display='block', document.getElementById('bar-batalhas').style.width=(d.bat*10)+'%', document.getElementById('bar-batalhas').innerText=d.bat;
+            if(d.tipo.includes("ESPECIAL")) document.getElementById('panel-especial').style.display='block', document.getElementById('bar-chaves').style.width=(d.chaves*5)+'%', document.getElementById('bar-chaves').innerText=d.chaves;
+            if(d.tipo.includes("ROYAL")) document.getElementById('panel-royal').style.display='block', document.getElementById('txt-kills').innerText=d.kills;
+            if(d.tipo.includes("1X1")) document.getElementById('panel-pvp').style.display='block', document.getElementById('txt-wins').innerText=d.w;
+        }
+        function abrirPlanilha() { if(jogadores[usuarioAtual].link) window.open(jogadores[usuarioAtual].link, '_blank'); }
+        function abrirLoja() { if(dadosGlobais.loja) window.open(dadosGlobais.loja, '_blank'); }
+
+        // --- MESTRE ---
+        function carregarMestreGeral() {
+            document.getElementById('global-avisos').value = dadosGlobais.avisos;
+            document.getElementById('global-ranking').value = dadosGlobais.ranking;
+            document.getElementById('global-loja').value = dadosGlobais.loja || "";
+            renderListaMestre();
+        }
+        function renderListaMestre() {
+            const l = document.getElementById('lista-mestre'); l.innerHTML = "";
+            for(let n in jogadores) l.innerHTML += `<div class="player-row"><span>${n}</span><div><button class="btn-mini" onclick="editarJ('${n}')">EDITAR</button><button class="btn-mini del" onclick="excluirJ('${n}')">X</button></div></div>`;
+        }
+        function salvarGlobal() {
+            dadosGlobais.avisos = document.getElementById('global-avisos').value;
+            dadosGlobais.ranking = document.getElementById('global-ranking').value;
+            dadosGlobais.loja = document.getElementById('global-loja').value;
+            salvarNuvem(); alert("SALVO NA NUVEM!");
+        }
+        function editarJ(n) {
+            editando = n; const d = jogadores[n];
+            document.getElementById('editor-mestre').style.display = 'block'; document.getElementById('titulo-editor').innerText = n;
+            document.getElementById('edit-senha').value = d.senha; document.getElementById('edit-link').value = d.link || ""; document.getElementById('edit-tipo').value = d.tipo; document.getElementById('edit-nivel').value = d.nivel;
+            document.getElementById('val-bat').value = d.bat; document.getElementById('val-key').value = d.chaves; document.getElementById('val-kill').value = d.kills; document.getElementById('val-wins').value = d.w; document.getElementById('val-losses').value = d.l;
+            atualizarInputsMestre();
+        }
+        function atualizarInputsMestre() {
+            const t = document.getElementById('edit-tipo').value;
+            ['input-bat', 'input-key', 'input-kill', 'input-pvp'].forEach(id => document.getElementById(id).style.display = 'none');
+            if(t.includes("NORMAL")) document.getElementById('input-bat').style.display='block';
+            if(t.includes("ESPECIAL")) document.getElementById('input-key').style.display='block';
+            if(t.includes("ROYAL")) document.getElementById('input-kill').style.display='block';
+            if(t.includes("1X1")) document.getElementById('input-pvp').style.display='block';
+        }
+        function salvarJogador() {
+            const d = jogadores[editando];
+            d.senha = document.getElementById('edit-senha').value; d.link = document.getElementById('edit-link').value; d.tipo = document.getElementById('edit-tipo').value; d.nivel = parseInt(document.getElementById('edit-nivel').value);
+            if(d.tipo.includes("NORMAL")) d.bat = parseInt(document.getElementById('val-bat').value);
+            if(d.tipo.includes("ESPECIAL")) d.chaves = parseInt(document.getElementById('val-key').value);
+            if(d.tipo.includes("ROYAL")) d.kills = parseInt(document.getElementById('val-kill').value);
+            if(d.tipo.includes("1X1")) { d.w = parseInt(document.getElementById('val-wins').value); d.l = parseInt(document.getElementById('val-losses').value); }
+            salvarNuvem(); alert("SALVO!"); fecharEditor();
+        }
+        function fecharEditor() { document.getElementById('editor-mestre').style.display='none'; }
+        function abrirCriador() { document.getElementById('criador-mestre').style.display='block'; }
+        function fecharCriador() { document.getElementById('criador-mestre').style.display='none'; }
+        function confirmarCriacao() {
+            const n = document.getElementById('novo-nome').value; const s = document.getElementById('nova-senha').value;
+            if(n && s) { jogadores[n] = {senha:s, nivel:1, tipo:"MISSÃO NORMAL", bat:0, chaves:0, kills:0, w:0, l:0, link:""}; salvarNuvem(); alert("CRIADO!"); fecharCriador(); }
+        }
+        function excluirJ(n) { if(confirm("EXCLUIR " + n + "?")) { delete jogadores[n]; salvarNuvem(); } }
+
+        // --- COMBATE ---
+        function spawnHorde() {
+            const n = document.getElementById('h-nome').value || "Minion";
+            const q = parseInt(document.getElementById('h-qtd').value) || 1;
+            const h = parseInt(document.getElementById('h-hp').value) || 10;
+            const stats = { o: document.getElementById('h-origem').value || "-", a: document.getElementById('h-atk').value||0, d: document.getElementById('h-def').value||0, v: document.getElementById('h-vel').value||0, w: document.getElementById('h-weak').value||"-", s1: document.getElementById('h-s1').value||"-", s2: document.getElementById('h-s2').value||"-", s3: document.getElementById('h-s3').value||"-", l: document.getElementById('h-loot').value||"Nada" };
+            for(let i=0; i<q; i++) horda.push({n, h, m:h, ...stats});
+            renderHorde();
+        }
+        function renderHorde() {
+            const c = document.getElementById('horde-container'); c.innerHTML = "";
+            horda.forEach((m, i) => {
+                const s = m.h <= 0 ? 'dead' : (m.h < m.m/2 ? 'hp-low' : 'hp-high');
+                c.innerHTML += `<div class="minion-chip ${s}" onclick="horda[${i}].h--;renderHorde()" oncontextmenu="horda[${i}].h++;renderHorde();return false;" onmousemove="moveTT(event, ${i})" onmouseleave="hideTT()"><span class="minion-name">${m.n}</span><span>${m.h}</span></div>`;
+            });
+        }
+        function moveTT(e, i) {
+            const m = horda[i]; const t = document.getElementById('global-tooltip');
+            t.style.display="block"; t.style.left=(e.clientX+10)+'px'; t.style.top=(e.clientY+10)+'px';
+            t.innerHTML = `<div class="tt-title">${m.n} (${m.o})</div>HP: ${m.h}/${m.m} | ATK: ${m.a} | DEF: ${m.d}<br><div class="tt-weak">⚠ ${m.w}</div><div class="tt-skill">1: ${m.s1}</div><div class="tt-skill">2: ${m.s2}</div><div class="tt-skill">3: ${m.s3}</div><div class="tt-loot">LOOT: ${m.l}</div>`;
+        }
+        function hideTT() { document.getElementById('global-tooltip').style.display="none"; }
+        function danoEmMassa(d) { horda.forEach(m => { m.h -= d; if(m.h<0)m.h=0; }); renderHorde(); }
+        function limparHorda() { if(confirm("LIMPAR?")) { horda=[]; renderHorde(); } }
+        function sortearVencedor() { const p = Object.keys(jogadores); if(!p.length) return; document.getElementById('resultado-roleta').innerText = p[Math.floor(Math.random()*p.length)]; }
+        function abrirBestiario() { window.open('https://docs.google.com/spreadsheets/d/1sl8Q_oe_i0yXBC1_9rpkXNwhtHuvre3Ns9JSt7IMaiA/edit?gid=0#gid=0', '_blank'); }
+        function abrirCombate() { irPara('tela-combate'); }
+        function fecharCombate() { irPara('tela-mestre'); }
+        function mudarTabCombate(id, b) { document.querySelectorAll('.combat-content').forEach(c=>c.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(t=>t.classList.remove('active')); document.getElementById(id).classList.add('active'); b.classList.add('active'); }
+        function mudarHP(v) { mobHP+=v; if(mobHP<0)mobHP=0; document.getElementById('mob-hp-atual').innerText=mobHP; }
+        function setHpMax() { mobHP=parseInt(document.getElementById('mob-hp-max').value); document.getElementById('mob-hp-atual').innerText=mobHP; }
+        function resetarMonstro() { document.getElementById('mob-nome').value=""; document.getElementById('mob-hp-max').value=20; setHpMax(); }
+
+    </script>
+</body>
+</html>
