@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OASIS - System V28</title>
+    <title>OASIS - System V29</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
     <style>
         /* =========================================
-           DESIGN SYSTEM: NEON TACTICAL V28
+           DESIGN SYSTEM: NEON TACTICAL V29
            ========================================= */
         :root {
             --bg: #00050a; 
@@ -97,7 +97,6 @@
         .roleta-box { background: #111; border: 1px solid var(--green); padding: 10px; border-radius: 6px; text-align: center; margin-top: 10px; }
         #resultado-roleta { font-size: 1.2rem; font-weight: bold; color: var(--green); text-shadow: 0 0 10px var(--green); min-height: 1.5rem; margin-top: 5px; }
         
-        /* STATUS */
         #status-cloud { position: fixed; bottom: 10px; right: 10px; font-size: 0.7rem; color: #666; pointer-events: none; }
     </style>
 </head>
@@ -109,7 +108,7 @@
     <div id="tela-login" class="screen active">
         <div class="center-frame">
             <h1 style="color: var(--cyan); font-size: 3rem; text-shadow: 0 0 15px var(--cyan);">OASIS</h1>
-            <p style="color: var(--yellow); font-size: 0.8rem; margin-bottom: 30px;">CLOUD SYSTEM V 28.0</p>
+            <p style="color: var(--yellow); font-size: 0.8rem; margin-bottom: 30px;">CLOUD SYSTEM V 29.0</p>
             <select id="login-user" onchange="mostrarSenha()">
                 <option value="" disabled selected>CARREGANDO NUVEM...</option>
             </select>
@@ -159,7 +158,7 @@
         </div>
         <div style="flex:1; overflow-y:auto; padding-bottom: 50px;">
             <div style="padding:10px;">
-                <button class="btn-action" style="background:var(--orange-dim); color:var(--orange); border-color:var(--orange);" onclick="abrirCombate()">⚔️ ARENA DE COMBATE (V28)</button>
+                <button class="btn-action" style="background:var(--orange-dim); color:var(--orange); border-color:var(--orange);" onclick="abrirCombate()">⚔️ ARENA DE COMBATE (V29)</button>
                 <button class="btn-action btn-bestiary" onclick="abrirBestiario()">📖 BESTIÁRIO</button>
             </div>
             <div class="master-global-section">
@@ -253,18 +252,18 @@
     </div>
 
     <script>
-        // CONFIGURAÇÃO DO SEU FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyBj4u8_X5kyBCcxjxtX-6KpNkOyTp5_iO4",
             authDomain: "oasis-battle-arena.firebaseapp.com",
             projectId: "oasis-battle-arena",
             storageBucket: "oasis-battle-arena.firebasestorage.app",
             messagingSenderId: "609109807560",
-            appId: "1:609109807560:web:58e3ae8622c3c7d980b0fd"
+            appId: "1:609109807560:web:58e3ae8622c3c7d980b0fd",
+            // AQUI ESTAVA FALTANDO O ENDEREÇO DO BANCO:
+            databaseURL: "https://oasis-battle-arena-default-rtdb.firebaseio.com"
         };
 
-        // INICIALIZAÇÃO FIREBASE (COMPAT)
-        firebase.initializeApp(firebaseConfig);
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.database();
 
         let dadosGlobais = { avisos: "SISTEMA ONLINE", ranking: "1. -", loja: "" };
@@ -272,7 +271,7 @@
         let usuarioAtual = "", editando = "";
         let mobHP = 20, horda = [];
 
-        // 1. CARREGAR (OUVIR NUVEM)
+        // 1. CONEXÃO
         db.ref('oasis').on('value', (snapshot) => {
             const data = snapshot.val();
             if (data) {
@@ -285,10 +284,13 @@
 
                 document.getElementById('status-cloud').innerText = "🟢 ONLINE";
                 document.getElementById('status-cloud').style.color = "#0f0";
+            } else {
+                // PRIMEIRO ACESSO (CRIA DADOS SE VAZIO)
+                salvarNuvem();
             }
         }, (error) => {
             console.error(error);
-            document.getElementById('status-cloud').innerText = "🔴 ERRO CONEXÃO";
+            document.getElementById('status-cloud').innerText = "🔴 ERRO: " + error.code;
         });
 
         // 2. SALVAR
@@ -344,7 +346,7 @@
             dadosGlobais.avisos = document.getElementById('global-avisos').value;
             dadosGlobais.ranking = document.getElementById('global-ranking').value;
             dadosGlobais.loja = document.getElementById('global-loja').value;
-            salvarNuvem(); alert("GLOBAL ATUALIZADO NA NUVEM!");
+            salvarNuvem(); alert("SALVO!");
         }
         function editarJ(n) {
             editando = n; const d = jogadores[n];
